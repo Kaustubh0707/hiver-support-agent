@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Large raw datasets
+data/raw/*.csv
+
+# Generated processed datasets
+data/processed/*.csv
+
+# Trained models
+models/*.joblib
+
+# Generated evaluation outputs
+outputs/*.csv
+
+# Local environment / secrets
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

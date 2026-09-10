@@ -1,0 +1,379 @@
+HIVER AI SUPPORT AGENT
+APPLE SUPPORT — GOLDEN SET LABELING GUIDE
+
+============================================================
+PURPOSE
+============================================================
+
+This guide is used to manually label 200 AppleSupport
+customer conversations.
+
+Each customer message must receive:
+
+1. Exactly one intent
+2. An auto-handle decision
+3. A short labeling note
+
+
+============================================================
+INTENT DEFINITIONS
+============================================================
+
+1. software_update_issue
+
+Use when the main problem is related to:
+
+- iOS/macOS updates
+- Update installation
+- Update failure
+- Problems caused by an update
+- Downgrading or reverting an update
+- Questions about a specific iOS version
+
+Examples:
+
+"How do I update my iPhone?"
+
+"After updating to iOS 11 my phone is not working."
+
+"Can I go back to the previous iOS version?"
+
+
+------------------------------------------------------------
+
+2. battery_issue
+
+Use when the main problem involves:
+
+- Battery draining quickly
+- Battery life
+- Battery health
+- Charging-related battery problems
+- Battery overheating
+
+Examples:
+
+"My battery drops 20% in an hour."
+
+"Battery life is horrible after the update."
+
+"Can Apple check my battery health?"
+
+
+------------------------------------------------------------
+
+3. performance_freezing
+
+Use when the main problem involves:
+
+- Device freezing
+- Device restarting repeatedly
+- Device becoming extremely slow
+- Apps/device becoming unresponsive
+- General performance problems
+
+Examples:
+
+"My iPhone keeps freezing."
+
+"My phone restarted 20 times today."
+
+"My iPhone became extremely slow."
+
+
+------------------------------------------------------------
+
+4. app_or_itunes_issue
+
+Use when the main problem involves:
+
+- iTunes
+- App installation
+- Apps not working
+- App Store problems
+- Apple media/software services
+
+Examples:
+
+"iTunes won't add artwork."
+
+"My iPhone won't install an app."
+
+"The App Store isn't working."
+
+
+------------------------------------------------------------
+
+5. connectivity_issue
+
+Use when the main problem involves:
+
+- Bluetooth
+- Wi-Fi
+- Cellular/network
+- No Service
+- Calls dropping because of connectivity
+- Device connection problems
+
+Examples:
+
+"Bluetooth keeps disconnecting."
+
+"My phone says No Service."
+
+"Wi-Fi stopped working."
+
+
+------------------------------------------------------------
+
+6. device_functionality_issue
+
+Use when a specific device feature is not working and
+the problem does not primarily belong to another intent.
+
+Examples:
+
+"My keyboard types the wrong characters."
+
+"My volume buttons don't work."
+
+"My screen is black."
+
+"My camera isn't working."
+
+
+------------------------------------------------------------
+
+7. account_or_billing_issue
+
+Use when the main problem involves:
+
+- Unexpected charges
+- iTunes/App Store purchases
+- Billing
+- Account access
+- Account-related transactions
+
+Examples:
+
+"Why did iTunes charge my bank account?"
+
+"I don't recognize this Apple charge."
+
+"I have a problem with my Apple account."
+
+
+------------------------------------------------------------
+
+8. information_or_how_to
+
+Use when the customer mainly asks for information or
+instructions and is not reporting a significant failure.
+
+Examples:
+
+"How do I enable this feature?"
+
+"Where can I find battery health?"
+
+"How do I change this setting?"
+
+
+------------------------------------------------------------
+
+9. general_support
+
+Use when the customer clearly wants help but the actual
+problem cannot be determined from the message.
+
+Examples:
+
+"@AppleSupport Help"
+
+"Can someone help me?"
+
+"I need assistance."
+
+
+------------------------------------------------------------
+
+10. other
+
+Use when the message does not reasonably fit any of the
+nine categories above.
+
+Use this sparingly.
+
+
+============================================================
+HOW TO CHOOSE BETWEEN SIMILAR INTENTS
+============================================================
+
+RULE 1:
+
+Choose the customer's MAIN problem.
+
+Example:
+
+"My battery drains quickly after updating iOS."
+
+Intent:
+battery_issue
+
+Reason:
+The immediate problem is battery drain, even though an
+update is mentioned.
+
+
+RULE 2:
+
+Use software_update_issue when the update itself is the
+main issue.
+
+Example:
+
+"How do I downgrade from iOS 11?"
+
+Intent:
+software_update_issue
+
+
+RULE 3:
+
+Use performance_freezing for freezing, restarting and
+major performance problems.
+
+Example:
+
+"Since the update my phone restarts every few minutes."
+
+Intent:
+performance_freezing
+
+If the message is mainly about the update failing to
+install, use software_update_issue instead.
+
+
+RULE 4:
+
+Use device_functionality_issue for a specific feature.
+
+Example:
+
+"My keyboard keeps changing the letters."
+
+Intent:
+device_functionality_issue
+
+
+RULE 5:
+
+Use information_or_how_to when the user is mainly asking
+for instructions.
+
+Example:
+
+"How do I check my battery health?"
+
+Intent:
+information_or_how_to
+
+But:
+
+"My battery health is terrible and drains quickly."
+
+Intent:
+battery_issue
+
+
+============================================================
+AUTO-HANDLE DECISION
+============================================================
+
+Use:
+
+YES
+or
+NO
+
+
+Use YES when:
+
+- The request is simple and informational.
+- A standard answer can solve the request.
+- No account-specific investigation is required.
+- No serious troubleshooting is required.
+
+Examples:
+
+"How do I check my iOS version?"
+
+"How do I enable this setting?"
+
+
+Use NO when:
+
+- The issue requires investigation.
+- The problem is device/account specific.
+- The customer needs troubleshooting.
+- The customer needs to provide private information.
+- The issue appears serious or unresolved.
+- Apple Support historically moved the conversation to DM
+  for further investigation.
+
+
+============================================================
+IMPORTANT LABELING RULE
+============================================================
+
+Label the CUSTOMER'S MESSAGE, not the historical Apple
+Support reply.
+
+The historical reply is provided only as supporting context.
+
+Do not copy the historical reply into the intent field.
+
+
+============================================================
+LABELING NOTE
+============================================================
+
+Write one short explanation.
+
+Good:
+
+"Battery drain requires device-specific troubleshooting."
+
+"Customer is only asking for instructions."
+
+"Specific keyboard problem requires troubleshooting."
+
+"Message is too vague to identify the issue."
+
+
+============================================================
+FINAL FORMAT
+============================================================
+
+Each row should look like:
+
+intent:
+battery_issue
+
+auto_handle:
+NO
+
+labeling_notes:
+Battery drain requires device-specific troubleshooting.
+
+
+============================================================
+CONSISTENCY RULE
+============================================================
+
+If you are unsure between two intents:
+
+1. Read the entire customer message.
+2. Identify the main issue.
+3. Prefer the more specific intent.
+4. Use other only when none of the categories fit.
