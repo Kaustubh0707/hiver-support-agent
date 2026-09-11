@@ -1,0 +1,4 @@
+system,accuracy,macro_precision,macro_recall,macro_f1
+Majority Class Baseline,0.1,0.01,0.1,0.01818181818181818
+Keyword Rule Baseline,0.956,0.9593487646730617,0.9560000000000001,0.9538465329146069
+TF-IDF + Logistic Regression,0.791,0.8003192416308176,0.791,0.7927431268549127

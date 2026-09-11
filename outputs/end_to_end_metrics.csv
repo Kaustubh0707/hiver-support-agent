@@ -1,0 +1,18 @@
+metric,value
+Evaluation examples,500.0
+AUTO-HANDLE count,71.0
+ESCALATE count,429.0
+AUTO-HANDLE rate,0.142
+Escalation rate,0.858
+Average intent confidence,0.4997
+High-confidence predictions (>= 0.70),113.0
+High-confidence prediction rate,0.226
+Cases with retrieval evidence,489.0
+Evidence availability rate,0.978
+Average historical similarity,0.5855
+Cases with strong evidence (similarity >= 0.50),224.0
+Strong evidence rate,0.448
+AUTO-HANDLE average confidence,0.8158
+AUTO-HANDLE average similarity,0.7422
+Weak AUTO-HANDLE cases,33.0
+Weak AUTO-HANDLE rate,0.4648
