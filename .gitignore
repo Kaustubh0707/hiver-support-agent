@@ -27,6 +27,7 @@ outputs/*
 !outputs/end_to_end_metrics.csv
 !outputs/final_evaluation_summary.csv
 !outputs/top_failure_cases.csv
+!outputs/support_agent_evaluation.csv
 
 # Local environment / secrets
 .env
