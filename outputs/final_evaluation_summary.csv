@@ -1,38 +1,19 @@
-category,metric,value,note
-Intent Classification,accuracy,0.791,Development evaluation using automatically generated pseudo-labels.
-Intent Classification,macro_precision,0.8003192416308176,Development evaluation using automatically generated pseudo-labels.
-Intent Classification,macro_recall,0.791,Development evaluation using automatically generated pseudo-labels.
-Intent Classification,macro_f1,0.7927431268549127,Development evaluation using automatically generated pseudo-labels.
-Intent Classification,weighted_precision,0.8003192416308176,Development evaluation using automatically generated pseudo-labels.
-Intent Classification,weighted_recall,0.791,Development evaluation using automatically generated pseudo-labels.
-Intent Classification,weighted_f1,0.7927431268549127,Development evaluation using automatically generated pseudo-labels.
-Baseline Comparison,Majority Class Baseline,0.1,Accuracy on the same pseudo-labeled development evaluation split.
-Baseline Comparison,Majority Class Baseline macro precision,0.01,Macro precision.
-Baseline Comparison,Majority Class Baseline macro recall,0.1,Macro recall.
-Baseline Comparison,Majority Class Baseline macro F1,0.0181818181818181,Macro F1.
-Baseline Comparison,Keyword Rule Baseline,0.956,Accuracy on the same pseudo-labeled development evaluation split.
-Baseline Comparison,Keyword Rule Baseline macro precision,0.9593487646730616,Macro precision.
-Baseline Comparison,Keyword Rule Baseline macro recall,0.956,Macro recall.
-Baseline Comparison,Keyword Rule Baseline macro F1,0.9538465329146067,Macro F1.
-Baseline Comparison,TF-IDF + Logistic Regression,0.791,Accuracy on the same pseudo-labeled development evaluation split.
-Baseline Comparison,TF-IDF + Logistic Regression macro precision,0.8003192416308176,Macro precision.
-Baseline Comparison,TF-IDF + Logistic Regression macro recall,0.791,Macro recall.
-Baseline Comparison,TF-IDF + Logistic Regression macro F1,0.7927431268549127,Macro F1.
-End-to-End Agent,Examples evaluated,500.0,AppleSupport conversations.
-End-to-End Agent,Auto-handle rate,0.142,Current conservative decision policy.
-End-to-End Agent,Escalation rate,0.858,Current conservative decision policy.
-End-to-End Agent,Average intent confidence,0.4996596,Classifier confidence.
-End-to-End Agent,Average historical similarity,0.5855294000000001,Best retrieved historical example.
-End-to-End Agent,Examples with strong evidence,0.448,Best historical similarity >= 0.50.
-Escalation Analysis,Intent is too broad or unclear,163.0,Number of escalated examples.
-Escalation Analysis,Low intent confidence,138.0,Number of escalated examples.
-Escalation Analysis,Device-specific troubleshooting required,67.0,Number of escalated examples.
-Escalation Analysis,Low historical similarity,40.0,Number of escalated examples.
-Escalation Analysis,Sensitive or unresolved issue,21.0,Number of escalated examples.
-Decision Policy,Current auto-handle rate,0.146,Threshold sensitivity analysis.
-Decision Policy,Balanced auto-handle rate,0.076,Threshold sensitivity analysis.
-Decision Policy,Conservative auto-handle rate,0.052,Threshold sensitivity analysis.
-Decision Policy,Very Conservative auto-handle rate,0.022,Threshold sensitivity analysis.
-Reply Quality,Local proxy score,7.0,"NOT used as a headline metric. All 500 examples received the same score, showing that the rule-based proxy is not discriminative enough."
-Evaluation Limitation,Hand-labeled golden set,0.0,Required 150-250 hand-labeled examples were not completed.
-Evaluation Limitation,LLM-as-judge,0.0,Not performed because no external LLM API was used.
+metric,value,notes
+Reviewed/provisional golden-set size,200.0,200 AppleSupport customer messages. Labels were reviewed during development but were not independently double-annotated.
+Golden-set accuracy,0.23,Evaluation of the Word + Character TF-IDF + LinearSVC classifier on the reviewed/provisional set.
+Golden-set macro F1,0.1930064516159604,Macro F1 across the 10 intent classes.
+Best pseudo-label benchmark accuracy,0.913,"Word + Character TF-IDF + LinearSVC with C=3.0. Labels were generated using keyword-based rules, so this is not a human-validated accuracy estimate."
+Best pseudo-label benchmark macro F1,0.9129340179853462,Word + Character TF-IDF + LinearSVC with C=3.0. Pseudo-label benchmark.
+Majority-class baseline accuracy,0.1,10 intent classes with approximately balanced pseudo-label training data.
+Keyword-rule baseline accuracy,0.956,Keyword baseline. This is artificially strong because the pseudo-labels were themselves generated using keyword rules.
+End-to-end evaluation examples,500.0,AppleSupport historical examples.
+Auto-handle rate,0.142,"Final policy using intent confidence, retrieval similarity, and safety/escalation rules."
+Escalation rate,0.858,Cases not considered safe enough for automatic handling.
+Average intent confidence,0.4997,Mean classifier confidence over 500 examples.
+Evidence availability rate,0.978,Fraction of examples for which historical retrieval returned evidence.
+Strong evidence rate,0.448,Historical retrieval similarity >= 0.50.
+Weak auto-handle rate,0.4648,Fraction of auto-handled cases classified as weak according to the evaluation's evidence criteria.
+LLM-as-judge,Not executed,No external LLM API key was available in the development environment. No fabricated judge scores are reported.
+Human/LLM agreement,Not measured,"Because an LLM judge was not executed, human/LLM agreement cannot be honestly calculated."
+What is misleading about my headline number?,91.30%,The 91.30% classifier result is measured against pseudo-labels created by keyword rules. The same model achieves 23.00% accuracy and 19.30% macro F1 on the 200-example reviewed/provisional golden set. Therefore 91.30% should not be presented as human-validated real-world accuracy.
+Safety philosophy,Conservative auto-handling,"Sensitive, unresolved, account/billing, device-specific, low-confidence, low-similarity, and ambiguous cases are preferentially escalated."

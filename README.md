@@ -9,7 +9,9 @@ The system uses historical customer-support conversations from Twitter to:
 2. Retrieve historically similar Apple Support conversations and use their responses as evidence.
 3. Decide whether a message can be auto-handled or should be escalated to a human.
 4. Provide a reason for every escalation decision.
-5. Evaluate the classifier, retrieval system, decision policy, baselines, and failure cases.
+5. Evaluate classification, retrieval, decision policy, baselines, and failure cases.
+
+The project intentionally reports both development performance and evaluation limitations instead of presenting pseudo-label results as production-quality accuracy.
 
 ---
 
@@ -17,9 +19,9 @@ The system uses historical customer-support conversations from Twitter to:
 
 Customer-support teams receive a large number of repetitive requests. The goal of this project is to build a support agent that can understand an incoming customer message, identify the type of problem, find evidence from previous support conversations, and make a safe decision about whether to answer automatically or involve a human.
 
-For this project, the selected support brand is  **AppleSupport** .
+For this project, the selected support brand is **AppleSupport**.
 
-The system is intentionally conservative: when confidence, historical evidence, or issue safety is insufficient, the system escalates the conversation instead of automatically handling it.
+The system is intentionally conservative: when intent confidence, historical evidence, or issue safety is insufficient, the system escalates the conversation instead of automatically handling it.
 
 ---
 
@@ -34,6 +36,7 @@ The complete dataset contains:
 * 2,811,774 tweets
 * 1,016,105 customer → brand conversation pairs
 * 98,576 AppleSupport conversation pairs
+* 96,807 unique AppleSupport customer messages
 
 The dataset is not included in this repository because of its size.
 
@@ -43,7 +46,7 @@ Place the downloaded dataset at:
 data/raw/twcs.csv
 ```
 
-The repository contains instructions in:
+The repository contains dataset instructions in:
 
 ```text
 data/raw/README.md
@@ -61,7 +64,7 @@ After constructing customer → brand response pairs:
 AppleSupport conversations: 98,576
 ```
 
-This provides enough historical examples for intent discovery, retrieval, evaluation, and failure analysis.
+This provides enough historical examples for intent development, retrieval, evaluation, and failure analysis.
 
 ---
 
@@ -94,7 +97,7 @@ Template       + Reason
 
 The agent does not blindly copy historical responses.
 
-Historical responses are retrieved as evidence, while the final decision is controlled by the intent confidence, historical similarity, and safety/escalation policy.
+Historical responses are retrieved as evidence, while the final decision is controlled by intent confidence, historical similarity, and safety/escalation rules.
 
 ---
 
@@ -117,7 +120,9 @@ The project uses ten support intents:
 
 ---
 
-## 6. Training Approach
+# 6. Training and Classification
+
+## 6.1 Development Labels
 
 The initial development dataset was created using keyword-based pseudo-labeling rules.
 
@@ -130,101 +135,164 @@ AppleSupport conversations
 Keyword-based pseudo-labeling
         |
         v
-Balanced training dataset
+Balanced development dataset
         |
         v
 TF-IDF feature extraction
         |
         v
-Logistic Regression classifier
+Classifier training
 ```
 
-The training dataset contains:
+The development dataset contains:
 
 ```text
 10,000 examples
 1,000 examples per intent
 ```
 
-The classifier uses:
+The original baseline classifier used:
 
-* TF-IDF
+* Word TF-IDF
 * Logistic Regression
 * 80/20 train-test split
 
+The original Logistic Regression result was:
+
+```text
+Accuracy: 79.10%
+Macro F1: 79.27%
+```
+
+## 6.2 Stronger Classifier
+
+A stronger Word + Character TF-IDF classifier was subsequently evaluated using Linear SVM.
+
+The best tested configuration was:
+
+```text
+Word TF-IDF:       n-grams (1, 2)
+Character TF-IDF:  char_wb n-grams (3, 5)
+Classifier:        LinearSVC
+C:                 3.0
+```
+
+Development benchmark:
+
+```text
+Accuracy: 91.30%
+Macro F1: 91.29%
+```
+
+This is the current **best pseudo-label development benchmark**.
+
+It must not be interpreted as independently human-validated intent accuracy.
+
 ---
 
-## 7. Important Labeling Limitation
+# 7. Golden Evaluation Set
 
-The assignment asks for a  **150–250 example hand-labelled golden evaluation set** .
+The project contains a 200-example golden evaluation set:
 
-The current implementation does **not** claim to have completed that requirement.
+```text
+evaluation/golden_set_labeled.csv
+```
 
-Instead, the development labels were generated using keyword-based rules.
+It contains:
 
-Therefore, the classifier metrics reported below are  **pseudo-label development metrics** , not human-validated accuracy.
+* 200 unique AppleSupport customer messages
+* Reviewed/provisional intent labels
+* Historical brand responses
+* Labeling notes
+* Auto-handle information where applicable
 
-This distinction is important because the keyword baseline performs extremely well against labels generated by the same type of rules.
+The labeling guidance is documented in:
 
-A proper next step would be to create a genuinely human-labelled evaluation set and use it as the primary benchmark.
+```text
+evaluation/labeling_guide.txt
+```
+
+### Important Qualification
+
+The labels are **provisional/reviewed labels**, not independently double-annotated ground truth.
+
+The set was reviewed during development, but a formal independent second annotator and inter-annotator agreement study were not completed.
+
+Therefore, the evaluation below should be described as a **reviewed/provisional golden-set evaluation**, not as a fully validated human benchmark.
 
 ---
 
-# 8. Classifier Results
+# 8. Golden-Set Evaluation
 
-The TF-IDF + Logistic Regression classifier achieved:
+The current Word + Character TF-IDF + LinearSVC classifier was evaluated on the 200 reviewed/provisional examples.
 
-| Metric          |          Result |
-| --------------- | --------------: |
-| Accuracy        | **79.1%** |
-| Macro Precision | **80.0%** |
-| Macro Recall    | **79.1%** |
-| Macro F1        | **79.3%** |
+| Metric                |           Result |
+| --------------------- | ---------------: |
+| Golden-set size       |              200 |
+| Accuracy              | **23.00%** |
+| Macro F1              | **19.30%** |
+| Correct predictions   |               46 |
+| Incorrect predictions |              154 |
 
-Per-intent performance:
+This result is substantially lower than the 91.30% pseudo-label development benchmark.
 
-| Intent               | Precision | Recall |   F1 |
-| -------------------- | --------: | -----: | ---: |
-| Account/Billing      |      0.87 |   0.89 | 0.88 |
-| App/iTunes           |      0.81 |   0.81 | 0.81 |
-| Battery              |      0.99 |   0.88 | 0.93 |
-| Connectivity         |      0.91 |   0.86 | 0.88 |
-| Device Functionality |      0.81 |   0.84 | 0.82 |
-| General Support      |      0.60 |   0.61 | 0.60 |
-| Information/How-to   |      0.51 |   0.52 | 0.52 |
-| Other                |      0.69 |   0.92 | 0.79 |
-| Performance/Freezing |      0.87 |   0.72 | 0.79 |
-| Software Update      |      0.94 |   0.86 | 0.90 |
+That gap is one of the most important findings in the project.
 
-The weakest areas are `information_or_how_to` and `general_support`, which are semantically broad and overlap with other categories.
+It demonstrates why the pseudo-label development score should not be presented as real-world classification accuracy.
+
+### Per-intent Results
+
+| Intent                         | Precision | Recall |    F1 | Support |
+| ------------------------------ | --------: | -----: | ----: | ------: |
+| `account_or_billing_issue`   |     0.200 |  0.143 | 0.167 |       7 |
+| `app_or_itunes_issue`        |     0.188 |  0.231 | 0.207 |      13 |
+| `battery_issue`              |     0.353 |  0.316 | 0.333 |      19 |
+| `connectivity_issue`         |     0.143 |  0.167 | 0.154 |       6 |
+| `device_functionality_issue` |     0.444 |  0.080 | 0.136 |      50 |
+| `general_support`            |     0.131 |  0.421 | 0.200 |      19 |
+| `information_or_how_to`      |     0.100 |  0.100 | 0.100 |      10 |
+| `other`                      |     0.000 |  0.000 | 0.000 |       7 |
+| `performance_freezing`       |     0.308 |  0.200 | 0.242 |      20 |
+| `software_update_issue`      |     0.419 |  0.367 | 0.391 |      49 |
 
 ---
 
 # 9. Baseline Comparison
 
-Three approaches were compared:
+The following approaches were compared during development:
 
 1. Majority-class baseline
 2. Keyword-rule baseline
 3. TF-IDF + Logistic Regression
+4. Word + Character TF-IDF + LinearSVC
 
-| Baseline                     | Accuracy | Macro F1 |
-| ---------------------------- | -------: | -------: |
-| Majority Class               |    10.0% |     1.8% |
-| Keyword Rules                |    95.6% |    95.4% |
-| TF-IDF + Logistic Regression |    79.1% |    79.3% |
+| Approach                            |        Accuracy |         Macro F1 |
+| ----------------------------------- | --------------: | ---------------: |
+| Majority Class                      |           10.0% |             1.8% |
+| Keyword Rules                       |           95.6% |            95.4% |
+| TF-IDF + Logistic Regression        |           79.1% |            79.3% |
+| Word + Character TF-IDF + LinearSVC | **91.3%** | **91.29%** |
 
 ### Interpretation
 
-The keyword baseline performs better than the trained classifier.
+The keyword baseline performs better than both trained classifiers on the pseudo-label benchmark.
 
-However, this result is **not a meaningful proof that keyword rules are better** because the development labels themselves were generated using keyword-based rules.
+However, this is not meaningful evidence that keyword rules are better in a real support setting because the development labels themselves were generated using keyword-based rules.
 
 This creates label leakage.
 
-Therefore, the 95.6% keyword result should not be presented as a real-world benchmark.
+Therefore:
 
-A human-labelled test set is required for a fair comparison.
+> **The 95.6% keyword-rule result is an artificially favorable development benchmark and should not be presented as real-world performance.**
+
+The stronger 91.30% SVM result is useful for model-development comparison, but it is also only a pseudo-label benchmark.
+
+The reviewed/provisional benchmark is much more revealing:
+
+```text
+Accuracy: 23.00%
+Macro F1: 19.30%
+```
 
 ---
 
@@ -233,11 +301,20 @@ A human-labelled test set is required for a fair comparison.
 The retrieval system uses:
 
 * TF-IDF vectors
-* cosine similarity
-* nearest-neighbor search
-* historical AppleSupport customer → brand response pairs
+* Cosine similarity
+* Nearest-neighbor search
+* Intent-aware retrieval
+* Historical AppleSupport customer → brand response pairs
 
-For each incoming message, the system retrieves up to three relevant historical conversations.
+The retrieval models/database are stored in:
+
+```text
+models/intent_reply_vectorizer.joblib
+models/intent_reply_retriever.joblib
+models/intent_reply_database.csv
+```
+
+For each incoming message, the system retrieves relevant historical conversations and keeps the strongest evidence examples.
 
 Example:
 
@@ -251,13 +328,25 @@ Retrieved historical examples:
 - Customer battery issue after update → Apple Support response
 ```
 
-These historical responses are used as evidence rather than copied blindly.
+Historical responses are used as evidence rather than copied blindly.
 
 ---
 
 # 11. Auto-Handle vs Escalate Policy
 
-The final policy uses:
+The decision policy combines:
+
+```text
+Intent confidence
+        +
+Historical similarity
+        +
+Intent safety
+        +
+Sensitive/unresolved issue detection
+```
+
+The intended policy uses confidence and similarity thresholds around:
 
 ```text
 Intent confidence >= 0.70
@@ -272,46 +361,47 @@ Additional safety rules escalate:
 * Unresolved issues
 * Low-confidence predictions
 * Low historical similarity
+* High-risk intent categories
 
-This produces a conservative support policy.
+The final policy is deliberately conservative.
 
 ---
 
 # 12. End-to-End Evaluation
 
-The final agent was evaluated on:
+The final support agent was evaluated on:
 
 ```text
 500 AppleSupport customer messages
 ```
 
-Results:
+Measured results:
 
-| Metric                        |          Result |
-| ----------------------------- | --------------: |
-| Examples evaluated            |             500 |
-| Auto-handled                  |              71 |
-| Escalated                     |             429 |
-| Auto-handle rate              | **14.2%** |
-| Escalation rate               | **85.8%** |
-| Average intent confidence     |           0.500 |
-| Average historical similarity |           0.586 |
-| Strong historical evidence    | **44.8%** |
+| Metric                          |          Result |
+| ------------------------------- | --------------: |
+| Examples evaluated              |             500 |
+| Auto-handled                    |              71 |
+| Escalated                       |             429 |
+| Auto-handle rate                | **14.2%** |
+| Escalation rate                 | **85.8%** |
+| Average intent confidence       |           0.500 |
+| Average historical similarity   |           0.586 |
+| Evidence availability           | **97.8%** |
+| Strong historical evidence      | **44.8%** |
+| Auto-handled average confidence |           0.816 |
+| Auto-handled average similarity |           0.742 |
+| Weak auto-handled cases         |              33 |
+| Weak auto-handled rate          | **46.5%** |
 
-For the automatically handled examples:
+The high escalation rate is intentional: the system prefers escalation when it cannot confidently support a safe automatic response.
 
-```text
-Average intent confidence: 0.816
-Average historical similarity: 0.742
-```
-
-The conservative policy intentionally keeps the auto-handle rate relatively low.
+The 14.2% auto-handle rate is therefore a **policy outcome**, not a measure of classifier accuracy.
 
 ---
 
 # 13. Decision Threshold Analysis
 
-Several threshold configurations were tested:
+A separate threshold sweep was performed to understand the trade-off between automation and evidence quality.
 
 | Policy      | Auto Rate | Avg Confidence | Avg Similarity |
 | ----------- | --------: | -------------: | -------------: |
@@ -320,7 +410,9 @@ Several threshold configurations were tested:
 | 0.80 / 0.60 |      5.2% |          0.903 |          0.927 |
 | 0.90 / 0.70 |      2.2% |          0.957 |          1.000 |
 
-The final policy favors safety and evidence quality over maximizing automation.
+These figures come from the threshold-analysis experiment and are useful for understanding the safety/automation trade-off.
+
+The final end-to-end result should be interpreted using the actual final policy evaluation in Section 12 rather than treating this sweep as the final production metric.
 
 ---
 
@@ -336,25 +428,29 @@ Among the 500 evaluated examples:
 | Low historical similarity       |    40 |
 | Sensitive / unresolved issue    |    21 |
 
-This shows that most escalations are caused by ambiguity or insufficient confidence rather than by the retrieval system completely failing.
+The largest escalation drivers are ambiguity and low classifier confidence.
+
+This supports the decision to use escalation as a safety mechanism rather than trying to maximize automation.
 
 ---
 
 # 15. Top Failure Modes
 
-## 1. Mixed-intent messages
+## 1. Mixed-Intent Messages
 
-Example:
+Representative case:
 
 ```text
 A message combines a software-update problem with the phone hanging or restarting.
 ```
 
-The classifier may choose one intent even though multiple issues are present.
+### Why it fails
+
+The classifier is single-label, so it may select one issue even when the message contains multiple problems.
 
 ### Hypothesis
 
-The current single-label classifier is not designed for multi-intent support messages.
+A single-label classifier cannot fully represent multi-intent customer-support messages.
 
 ### Improvement
 
@@ -362,19 +458,21 @@ Use multi-label classification or detect multiple issue types before retrieval.
 
 ---
 
-## 2. Broad requests
+## 2. Broad Requests
 
-Example:
+Representative case:
 
 ```text
 "Can you help me with my iPhone?"
 ```
 
-There is not enough information to determine the actual problem.
+### Why it fails
+
+There is not enough information to identify the customer's actual problem.
 
 ### Hypothesis
 
-The message does not contain enough lexical evidence for a specific intent.
+The message contains insufficient evidence for a specific support intent.
 
 ### Improvement
 
@@ -382,42 +480,41 @@ Ask a clarification question instead of forcing a specific intent.
 
 ---
 
-## 3. General Support vs Information/How-to confusion
+## 3. General Support vs Information/How-to Confusion
 
-These two intents frequently overlap.
+Representative failure cases include messages where a broad request for support overlaps with a request for instructions.
 
-The largest confusion patterns include:
+### Why it fails
 
-```text
-general_support -> information_or_how_to
-information_or_how_to -> general_support
-```
-
-### Improvement
-
-Use examples with clearer annotation boundaries and consider a hierarchical classifier.
-
----
-
-## 4. Low historical similarity
-
-Some messages have a high classifier confidence but no sufficiently similar historical support response.
+The two intents are semantically broad and have overlapping language.
 
 ### Hypothesis
 
-Intent classification and retrieval quality are not perfectly correlated.
+The current taxonomy does not create a sufficiently sharp boundary between these categories.
 
 ### Improvement
 
-Use semantic embeddings in addition to TF-IDF and rerank retrieved responses using both intent compatibility and semantic similarity.
+Improve annotation guidelines, add boundary examples, and consider a hierarchical classifier.
 
 ---
 
-## 5. Device-specific troubleshooting
+## 4. Low Historical Similarity
 
-Some issues require information that is not present in the customer's first message.
+Some messages receive relatively high intent confidence but do not have a sufficiently similar historical support response.
 
-For example:
+### Why it fails
+
+Intent classification and retrieval quality are separate problems. A confident intent prediction does not guarantee that a close historical resolution exists.
+
+### Improvement
+
+Augment TF-IDF retrieval with sentence embeddings and rerank candidates using both semantic similarity and intent compatibility.
+
+---
+
+## 5. Device-Specific Troubleshooting
+
+Representative cases involve issues where the first customer message lacks information such as:
 
 ```text
 device model
@@ -425,6 +522,10 @@ iOS version
 error message
 previous troubleshooting steps
 ```
+
+### Why it fails
+
+A safe resolution often depends on diagnostic context that is not available in the initial message.
 
 ### Improvement
 
@@ -434,33 +535,46 @@ Use a structured troubleshooting flow that asks for missing diagnostic informati
 
 # 16. What Is Misleading About My Headline Number?
 
-The most tempting headline number is the classifier's:
+The most tempting headline number is:
 
 ```text
-79.1% accuracy
+91.30% accuracy
 ```
 
-This number is misleading if presented as real-world support accuracy.
+This is the best classifier result obtained during development, but it is **not human-validated accuracy**.
 
-The reason is that the labels used for development and evaluation were generated using keyword-based rules rather than an independently hand-labelled dataset.
+It was measured on pseudo-labels generated using keyword-based rules.
 
-The keyword baseline achieves 95.6% on the same pseudo-labels, which strongly suggests that the benchmark is affected by label-generation rules.
+The same development setup produces a 95.6% keyword-rule baseline, which strongly suggests that the benchmark is influenced by the label-generation procedure.
+
+When the same SVM is evaluated against the 200 reviewed/provisional examples, performance drops to:
+
+```text
+Accuracy: 23.00%
+Macro F1: 19.30%
+```
 
 Therefore:
 
-> **79.1% should be interpreted as a development result on pseudo-labels, not as evidence of 79.1% real-world intent accuracy.**
+> **91.30% should be interpreted as a pseudo-label development benchmark, not evidence of 91.30% real-world intent accuracy.**
 
-A properly hand-labelled 150–250 example golden set should replace this benchmark before making a production-quality claim.
+The most important lesson is that label quality and benchmark independence matter more than optimizing a model against a convenient pseudo-labeling scheme.
+
+The 200-example reviewed/provisional set is a better direction for evaluation, but it still needs independent annotation and agreement measurement before it can be treated as a production-quality golden benchmark.
 
 ---
 
 # 17. Reply Quality Evaluation
 
-A local rule-based reply-quality evaluator was also implemented.
+A local deterministic reply-quality evaluator was implemented in:
 
-It evaluated 500 historical examples.
+```text
+src/24_evaluate_reply_quality.py
+```
 
-The proxy evaluator produced:
+It evaluated 500 examples.
+
+The current proxy produced:
 
 ```text
 Average score: 7/9
@@ -468,18 +582,24 @@ Median score: 7/9
 100% >= 7/9
 ```
 
-However, these results are  **not used as a headline quality metric** .
+However, these results are **not used as a headline reply-quality metric**.
 
-The evaluator is deterministic and locally defined, and there is currently no independent human/LLM agreement study.
+The evaluator is locally defined and deterministic. It does not provide independent human validation.
 
-Therefore, the result should be treated only as a development diagnostic.
+The required LLM-as-judge evaluation has **not been executed** in the current environment because no LLM API key is configured.
 
-A stronger evaluation would use:
+Human/LLM agreement has therefore also **not been measured**.
 
-* Human ratings
-* LLM-as-judge with a defined rubric
-* Human/LLM agreement measurement
-* Pairwise comparison against baseline replies
+A stronger evaluation should use a rubric covering:
+
+* Relevance
+* Correctness
+* Helpfulness
+* Grounding in historical evidence
+* Tone
+* Safety
+
+and compare LLM-judge scores against human ratings.
 
 ---
 
@@ -487,9 +607,9 @@ A stronger evaluation would use:
 
 The agent is intentionally conservative.
 
-It is preferable to escalate an uncertain customer issue rather than provide an unsupported troubleshooting response.
+It is preferable to escalate an uncertain customer issue than to provide an unsupported troubleshooting response.
 
-Automatic handling is therefore limited to cases where:
+Automatic handling therefore requires a combination of:
 
 ```text
 High intent confidence
@@ -498,10 +618,19 @@ Sufficient historical evidence
         +
 No sensitive escalation condition
         +
-Intent is suitable for safe handling
+Intent suitable for safe handling
 ```
 
-This is especially important for account, billing, security, and device-specific problems.
+This is especially important for:
+
+* Account issues
+* Billing/payment issues
+* Security-related issues
+* Device-specific troubleshooting
+* Unresolved issues
+* Broad or ambiguous requests
+
+The project treats escalation as a safety mechanism rather than as a failure of the system.
 
 ---
 
@@ -517,20 +646,20 @@ hiver-support-agent/
 │
 ├── evaluation/
 │   ├── golden_set.csv
-│   ├── labeling_guide.txt
-│   └── 07_validate_golden_set.py
+│   ├── golden_set_labeled.csv
+│   └── labeling_guide.txt
 │
 ├── models/
 │
 ├── outputs/
 │   ├── baseline_comparison.csv
-│   ├── classifier_confusion_matrix.csv
 │   ├── classifier_metrics.csv
 │   ├── decision_log.csv
 │   ├── decision_threshold_comparison.csv
 │   ├── end_to_end_metrics.csv
 │   ├── final_evaluation_summary.csv
-│   ├── support_agent_evaluation.csv
+│   ├── golden_set_metrics.csv
+│   ├── svm_tuning_results.csv
 │   └── top_failure_cases.csv
 │
 ├── src/
@@ -542,19 +671,32 @@ hiver-support-agent/
 │   ├── 11_improve_retrieval.py
 │   ├── 13_evaluate_classifier.py
 │   ├── 14_compare_baselines.py
-│   ├── 15_evaluate_support_agent.py
 │   ├── 18_failure_analysis.py
 │   ├── 19_create_decision_log.py
 │   ├── 20_evaluate_end_to_end.py
 │   ├── 21_tune_decision_thresholds.py
 │   ├── 23_final_support_agent_v3.py
 │   ├── 24_evaluate_reply_quality.py
-│   └── 25_create_final_evaluation.py
+│   ├── 25_create_final_evaluation.py
+│   ├── 26_test_stronger_classifier.py
+│   ├── 27_test_word_char_svm.py
+│   ├── 28_tune_svm.py
+│   ├── 29_find_suspicious_training_examples.py
+│   ├── 30_prepare_golden_set.py
+│   └── 31_evaluate_golden_set.py
 │
 ├── .gitignore
 ├── README.md
 └── requirements.txt
 ```
+
+### Evaluation Scripts
+
+`30_prepare_golden_set.py` prepares the reviewed/provisional evaluation set.
+
+`31_evaluate_golden_set.py` evaluates the current classifier against that set.
+
+The manual-error-review and LLM-judge scripts are not required for the current reproducible pipeline.
 
 ---
 
@@ -567,7 +709,7 @@ git clone https://github.com/Kaustubh0707/hiver-support-agent.git
 cd hiver-support-agent
 ```
 
-## Step 2 — Create virtual environment
+## Step 2 — Create Virtual Environment
 
 Windows:
 
@@ -587,13 +729,13 @@ CMD:
 .venv\Scripts\activate
 ```
 
-## Step 3 — Install dependencies
+## Step 3 — Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Step 4 — Add the dataset
+## Step 4 — Add Dataset
 
 Download the Customer Support on Twitter dataset and place:
 
@@ -613,9 +755,9 @@ See:
 data/raw/README.md
 ```
 
-for the dataset instructions.
+for dataset instructions.
 
-## Step 5 — Prepare conversations
+## Step 5 — Prepare Conversations
 
 ```bash
 python src/03_prepare_data.py
@@ -627,43 +769,96 @@ python src/03_prepare_data.py
 python src/04_select_brand.py
 ```
 
-## Step 7 — Discover intents
+## Step 7 — Discover Intents
 
 ```bash
 python src/05_discover_intents.py
 ```
 
-## Step 8 — Create development training data
+## Step 8 — Create Development Training Data
 
 ```bash
 python src/07_create_training_data.py
 ```
 
-## Step 9 — Train classifier
+## Step 9 — Train Original Classifier
 
 ```bash
 python src/08_train_intent_classifier.py
 ```
 
-## Step 10 — Build retrieval system
+## Step 10 — Build Retrieval System
 
 ```bash
 python src/11_improve_retrieval.py
 ```
 
-## Step 11 — Run evaluations
+## Step 11 — Run Baseline and Classifier Evaluations
 
 ```bash
 python src/13_evaluate_classifier.py
 python src/14_compare_baselines.py
+```
+
+## Step 12 — Run Stronger Classifier Experiments
+
+```bash
+python src/26_test_stronger_classifier.py
+python src/27_test_word_char_svm.py
+python src/28_tune_svm.py
+```
+
+The best development configuration is Word + Character TF-IDF + LinearSVC with `C=3.0`.
+
+## Step 13 — Prepare and Evaluate Golden Set
+
+```bash
+python src/30_prepare_golden_set.py
+python src/31_evaluate_golden_set.py
+```
+
+This produces:
+
+```text
+evaluation/golden_set_labeled.csv
+evaluation/golden_set_predictions.csv
+outputs/golden_set_metrics.csv
+outputs/golden_set_confusion_matrix.png
+```
+
+## Step 14 — Run End-to-End Evaluation
+
+```bash
 python src/20_evaluate_end_to_end.py
+```
+
+## Step 15 — Analyze Decision Thresholds
+
+```bash
 python src/21_tune_decision_thresholds.py
+```
+
+## Step 16 — Run Failure Analysis
+
+```bash
 python src/18_failure_analysis.py
+```
+
+## Step 17 — Run Reply-Quality Diagnostic
+
+```bash
 python src/24_evaluate_reply_quality.py
+```
+
+This is a local proxy evaluation, not an LLM-as-judge evaluation.
+
+## Step 18 — Create Final Evaluation Summary
+
+```bash
 python src/25_create_final_evaluation.py
 ```
 
-The final evaluation summary is written to:
+The final summary is written to:
 
 ```text
 outputs/final_evaluation_summary.csv
@@ -703,30 +898,46 @@ Each decision includes the reasoning behind the choice.
 
 With one additional week, the highest-priority improvements would be:
 
-### 1. Human-labelled golden set
+### 1. Independently Validate the Golden Set
 
-Create 150–250 independently labelled examples and use them as the primary evaluation benchmark.
+Re-annotate the 200 examples independently and measure inter-annotator agreement.
 
-### 2. Better intent modelling
+The goal is to establish a defensible 150–250 example evaluation benchmark rather than relying on provisional labels.
 
-Replace the keyword-generated labels with human labels and compare:
+### 2. Rebuild the Classifier Around Human Labels
+
+Train and compare:
 
 * TF-IDF + Logistic Regression
-* Sentence embeddings
+* Word + Character TF-IDF + LinearSVC
+* Sentence-embedding classifier
 * Small transformer classifier
-* LLM-based classification
 
-### 3. Semantic retrieval
+The independently validated labels should become the primary development target.
+
+### 3. Semantic Retrieval
 
 Replace or augment TF-IDF retrieval with sentence embeddings.
 
-### 4. Better reply generation
+A hybrid retriever can combine:
 
-Use retrieved historical responses as grounded evidence and generate a concise response using an LLM.
+```text
+intent compatibility
+        +
+lexical similarity
+        +
+semantic similarity
+```
 
-### 5. Stronger evaluation
+### 4. Better Reply Generation
 
-Implement an LLM-as-judge rubric for:
+Use retrieved historical responses as grounded evidence and generate concise, customer-specific responses.
+
+The generator should not invent troubleshooting steps unsupported by the retrieved evidence.
+
+### 5. LLM-as-Judge Evaluation
+
+Run an LLM-based rubric for:
 
 * Relevance
 * Correctness
@@ -735,11 +946,28 @@ Implement an LLM-as-judge rubric for:
 * Tone
 * Safety
 
-Then measure agreement between human ratings and the LLM judge.
+Then compare LLM-judge scores against human ratings and report agreement.
 
-### 6. Multi-intent handling
+### 6. Multi-Intent Handling
 
-Detect messages containing multiple issues and either handle each issue separately or escalate when appropriate.
+Detect messages containing multiple issues and either:
+
+* handle each issue separately,
+* ask for clarification, or
+* escalate when safe resolution is uncertain.
+
+### 7. Better Observability
+
+Track:
+
+* Intent confidence
+* Retrieval similarity
+* Escalation reason
+* Reply-quality score
+* User outcome
+* Human override rate
+
+This would allow the decision policy to be tuned using real support outcomes rather than only offline metrics.
 
 ---
 
@@ -765,31 +993,69 @@ Auto-Handle or Escalate
 Evaluation + Failure Analysis
 ```
 
-The most important result is not simply the classifier accuracy.
+The strongest development classifier result is:
 
-The main finding is that  **safe automation requires combining intent confidence with historical evidence and escalation rules** .
+```text
+91.30% accuracy
+91.29% macro F1
+```
 
-The current system deliberately favors conservative escalation because incorrect support responses can be more harmful than asking a human agent to intervene.
+but it is a **pseudo-label development benchmark**.
+
+The reviewed/provisional evaluation shows:
+
+```text
+23.00% accuracy
+19.30% macro F1
+```
+
+This gap is the most important result for understanding the current system.
+
+The end-to-end agent evaluated 500 messages and:
+
+```text
+Auto-handled: 14.2%
+Escalated:    85.8%
+```
+
+The main product-level finding is that safe automation requires combining:
+
+```text
+Intent confidence
+        +
+Historical evidence
+        +
+Safety rules
+        +
+Escalation
+```
+
+The current system deliberately favors conservative escalation because an unsupported support response can be more harmful than involving a human.
 
 ---
 
-## Limitations
+# 24. Limitations
 
 The current version has several important limitations:
 
-* Development labels are pseudo-labels rather than independently hand-labelled labels.
-* The keyword baseline is therefore affected by label-generation leakage.
-* There is no human/LLM agreement measurement yet.
-* Reply quality evaluation is a local proxy rather than a validated human evaluation.
+* Development labels are pseudo-labels rather than independently validated labels.
+* The 200-example evaluation set is reviewed/provisional rather than independently double-annotated.
+* The 91.30% classifier result is therefore not a human-validated accuracy claim.
+* The keyword baseline is affected by label-generation leakage.
+* Human/LLM agreement has not been measured.
+* LLM-as-judge evaluation has not been executed in the current environment.
+* Reply-quality evaluation is a local deterministic proxy rather than a validated human evaluation.
 * Retrieval uses TF-IDF rather than a semantic embedding model.
 * The classifier is single-intent.
 * The system does not yet use an LLM to generate fully personalized responses.
+* Some device-specific issues require diagnostic information that is not present in the first customer message.
+* The current evaluation is offline and does not measure real customer outcomes.
 
 These limitations are intentionally documented rather than hidden.
 
 ---
 
-## Repository
+# 25. Repository
 
 GitHub:
 
@@ -797,8 +1063,19 @@ GitHub:
 
 ---
 
-## Final Note
+# 26. Final Note
 
-This project prioritizes reproducibility, transparent evaluation, and safe escalation over presenting inflated performance numbers.
+This project prioritizes:
 
-The reported results should therefore be interpreted together with the evaluation limitations described above.
+* Reproducibility
+* Transparent evaluation
+* Grounded historical evidence
+* Conservative automation
+* Safe escalation
+* Honest reporting of limitations
+
+The headline classifier number should never be presented without its evaluation context.
+
+The most defensible interpretation of the current results is:
+
+> **The project demonstrates a complete support-agent pipeline and a strong pseudo-label development classifier, but the current evidence does not support a claim of production-level intent accuracy.**
